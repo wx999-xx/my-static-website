@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大学英语语法连连看-进阶版</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            padding: 20px;
+        }
+
+        .game-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px 20px;
+            background-color: #409eff;
+            color: white;
+            border-radius: 8px;
+        }
+
+        .mode-switch {
+            display: flex;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 5px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            background-color: #66b1ff;
+            color: white;
+        }
+
+        .mode-btn.active {
+            background-color: #1890ff;
+        }
+
+        .score-box, .timer-box, .streak-box {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .game-body {
+            display: flex;
+            justify-content: space-between;
+            gap: 40px;
+            margin-bottom: 20px;
+        }
+
+        .left-column {
+            width: 50%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .right-column {
+            width: 45%;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        /* 错误句卡片样式 */
+        .error-card {
+            padding: 25px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 18px;
+            line-height: 1.6;
+            border-left: 4px solid #f5222d;
+        }
+
+        .error-card .error-tag {
+            color: #f5222d;
+            font-weight: bold;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        /* 修正选项卡片样式 */
+        .option-card {
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .option-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            transform: translateY(-2px);
+        }
+
+        .option-card.selected {
+            background-color: #e6f7ff;
+            border: 2px solid #409eff;
+        }
+
+        .option-card.correct {
+            background-color: #f0f9ff;
+            border: 2px solid #52c41a;
+            pointer-events: none;
+        }
+
+        .option-card.wrong {
+            background-color: #fff2f0;
+            border: 2px solid #f5222d;
+        }
+
+        /* 抢答倒计时样式 */
+        .answer-countdown {
+            text-align: center;
+            font-size: 24px;
+            color: #f5222d;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .game-footer {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .btn {
+            padding: 10px 30px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 4px;
+            background-color: #409eff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background-color: #1890ff;
+        }
+
+        .reset-btn {
+            background-color: #ff7a45;
+        }
+
+        .reset-btn:hover {
+            background-color: #ff4d1a;
+        }
+
+        /* 详细解析样式 */
+        .analysis-box {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-left: 4px solid #409eff;
+            display: none;
+        }
+
+        .analysis-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #333;
+            font-size: 18px;
+        }
+
+        .error-point {
+            color: #f5222d;
+            font-weight: bold;
+        }
+
+        .correct-rule {
+            color: #52c41a;
+            margin-top: 8px;
+        }
+
+        .game-over {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .game-over-content {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .game-over-score {
+            font-size: 24px;
+            margin: 20px 0;
+            color: #409eff;
+        }
+
+        .game-over-streak {
+            font-size: 18px;
+            color: #ff7a45;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- 游戏头部：模式切换+得分+计时+连对奖励 -->
+        <div class="game-header">
+            <div class="mode-switch">
+                <button class="mode-btn" id="basicMode">基础模式</button>
+                <button class="mode-btn active" id="advanceMode">进阶模式</button>
+            </div>
+            <h1>大学英语语法连连看-进阶版</h1>
+            <div class="score-box">得分：<span id="score">0</span></div>
+            <div class="streak-box">连对：<span id="streak">0</span>题（<span id="streakBonus">0</span>分奖励）</div>
+            <div class="timer-box">剩余时间：<span id="timer">90</span>秒</div>
+        </div>
+
+        <!-- 游戏主体：错误句 + 多选项修正 -->
+        <div class="game-body">
+            <div class="left-column">
+                <div class="error-card" id="errorCard">
+                    <span class="error-tag">语法错误句：</span>
+                    <span id="errorSentence">Loading...</span>
+                </div>
+                <div class="answer-countdown" id="answerCountdown">抢答剩余：5秒</div>
+            </div>
+            <div class="right-column" id="optionColumn"></div>
+        </div>
+
+        <!-- 游戏底部：按钮+详细解析 -->
+        <div class="game-footer">
+            <button class="btn" id="submitBtn">确认选择</button>
+            <button class="btn reset-btn" id="resetBtn">重新开始</button>
+            <div class="analysis-box" id="analysisBox">
+                <div class="analysis-title" id="analysisTitle"></div>
+                <div id="analysisContent"></div>
+                <div class="correct-rule" id="correctRule"></div>
+            </div>
+        </div>
+
+        <!-- 游戏结束弹窗 -->
+        <div class="game-over" id="gameOver">
+            <div class="game-over-content">
+                <h2>游戏结束！</h2>
+                <div class="game-over-score">最终得分：<span id="finalScore">0</span></div>
+                <div class="game-over-streak">最高连对：<span id="finalStreak">0</span>题</div>
+                <button class="btn" id="restartBtn">再来一局</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 1. 进阶模式题库（含错误句+多修正选项+错误点解析+语法规则）
+        const advanceGrammarLib = [
+            {
+                errorSentence: "He go to school every day.", // 错误句
+                options: [
+                    "He goes to school every day.", // 正确选项
+                    "He went to school every day.", // 干扰项1（时态错误）
+                    "He go to the school every day." // 干扰项2（冠词冗余）
+                ],
+                correctIndex: 0, // 正确选项索引
+                errorPoint: "错误点：一般现在时第三人称单数（he）后，谓语动词go未加-s", // 错误点
+                analysis: "句子时间状语为every day（每天），表示习惯性动作，应用一般现在时；主语he是第三人称单数，谓语动词需加-s/es（go → goes）。", // 解析
+                rule: "语法规则：一般现在时中，主语为第三人称单数（he/she/it/单数名词等），谓语动词需变第三人称单数形式。" // 核心规则
+            },
+            {
+                errorSentence: "If I know the news yesterday, I will tell you.", // 错误句（虚拟语气+时态双错误）
+                options: [
+                    "If I knew the news yesterday, I would tell you.", // 正确选项
+                    "If I know the news yesterday, I would tell you.", // 干扰项1（前半句未改）
+                    "If I had known the news yesterday, I would have told you." // 干扰项2（过度修正，yesterday不一定用过去完成）
+                ],
+                correctIndex: 0,
+                errorPoint: "错误点：1. 虚拟语气与过去事实相反，从句应用knew（而非know）；2. 主句应用would tell（而非will tell）",
+                analysis: "句中yesterday表示过去的时间，此处是对过去事实的虚拟（实际不知道消息），虚拟语气结构应为：从句用一般过去时（knew），主句用would + 动词原形（tell）。",
+                rule: "语法规则：虚拟语气中，与过去事实相反的非真实条件句，若语境为“过去可能发生但未发生”，可简化为从句一般过去时+主句would+原形；强调“过去的过去”用had done + would have done。"
+            },
+            {
+                errorSentence: "She enjoy to read English novels in her free time.", // 错误句（非谓语+主谓一致）
+                options: [
+                    "She enjoys reading English novels in her free time.", // 正确选项
+                    "She enjoy reading English novels in her free time.", // 干扰项1（未改主谓一致）
+                    "She enjoys to read English novels in her free time." // 干扰项2（未改非谓语）
+                ],
+                correctIndex: 0,
+                errorPoint: "错误点：1. 主语she是第三人称单数，enjoy未加-s；2. enjoy后接动名词（reading）而非不定式（to read）",
+                analysis: "enjoy是及物动词，后接动名词（V-ing）作宾语，不能接不定式；同时主语she为第三人称单数，一般现在时中enjoy需变为enjoys。",
+                rule: "语法规则：常见后接动名词的动词有enjoy/finish/avoid/mind/practice等，且需注意主谓一致。"
+            },
+            {
+                errorSentence: "The book which I bought it last week is very useful.", // 错误句（定语从句冗余代词）
+                options: [
+                    "The book which I bought last week is very useful.", // 正确选项
+                    "The book that I bought it last week is very useful.", // 干扰项1（换关系词但未删it）
+                    "The book I bought last week is very useful." // 干扰项2（正确但非最优，进阶模式优先保留关系词）
+                ],
+                correctIndex: 0,
+                errorPoint: "错误点：定语从句中，关系代词which已作bought的宾语，多余的it导致句子结构重复",
+                analysis: "定语从句中，关系代词which/that指代先行词the book，在从句中作bought的宾语，因此无需再加it；it在此处属于冗余成分，需删除。",
+                rule: "语法规则：定语从句中，关系代词（which/that/who等）若在从句中作宾语，不可重复使用代词（it/he/she等）指代先行词。"
+            },
+            {
+                errorSentence: "They are watch TV when I arrived home yesterday.", // 错误句（时态+进行时结构）
+                options: [
+                    "They were watching TV when I arrived home yesterday.", // 正确选项
+                    "They are watching TV when I arrived home yesterday.", // 干扰项1（未改be动词）
+                    "They watched TV when I arrived home yesterday." // 干扰项2（未用进行时，丢失“正在看电视”的语境）
+                ],
+                correctIndex: 0,
+                errorPoint: "错误点：1. 时间状语yesterday表示过去，are应改为were；2. 进行时结构应为be + V-ing，watch应改为watching",
+                analysis: "句中when引导的时间状语从句用了一般过去时（arrived），主句表示“过去某个时刻正在做的动作”，应用过去进行时（were watching）。",
+                rule: "语法规则：过去进行时（was/were + V-ing）表示过去某一时刻或时间段正在进行的动作，常与when/while引导的一般过去时从句连用。"
+            }
+        ];
+
+        // 2. 全局变量
+        let gameMode = "advance"; // 默认进阶模式
+        let score = 0;
+        let timeLeft = 90; // 进阶模式时间更长
+        let timerInterval;
+        let selectedOption = null;
+        let currentQuestionIndex = 0; // 当前题目索引
+        let shuffledQuestions = []; // 打乱后的题库
+        let streakCount = 0; // 连对次数
+        let maxStreak = 0; // 最高连对
+        let streakBonus = 0; // 连对奖励分
+        let answerCountdownTimer = null; // 抢答倒计时
+        let answerCountdownLeft = 5; // 抢答剩余时间
+
+        // 3. DOM元素
+        const basicModeBtn = document.getElementById('basicMode');
+        const advanceModeBtn = document.getElementById('advanceMode');
+        const scoreElement = document.getElementById('score');
+        const streakElement = document.getElementById('streak');
+        const streakBonusElement = document.getElementById('streakBonus');
+        const timerElement = document.getElementById('timer');
+        const errorCard = document.getElementById('errorCard');
+        const errorSentence = document.getElementById('errorSentence');
+        const answerCountdown = document.getElementById('answerCountdown');
+        const optionColumn = document.getElementById('optionColumn');
+        const submitBtn = document.getElementById('submitBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const analysisBox = document.getElementById('analysisBox');
+        const analysisTitle = document.getElementById('analysisTitle');
+        const analysisContent = document.getElementById('analysisContent');
+        const correctRule = document.getElementById('correctRule');
+        const gameOver = document.getElementById('gameOver');
+        const finalScoreElement = document.getElementById('finalScore');
+        const finalStreakElement = document.getElementById('finalStreak');
+        const restartBtn = document.getElementById('restartBtn');
+
+        // 4. 初始化游戏（区分模式）
+        function initGame() {
+            // 重置所有状态
+            score = 0;
+            timeLeft = gameMode === "advance" ? 90 : 60;
+            streakCount = 0;
+            maxStreak = 0;
+            streakBonus = 0;
+            currentQuestionIndex = 0;
+            selectedOption = null;
+            
+            // 更新UI
+            scoreElement.textContent = score;
+            streakElement.textContent = streakCount;
+            streakBonusElement.textContent = streakBonus;
+            timerElement.textContent = timeLeft;
+            analysisBox.style.display = 'none';
+            gameOver.style.display = 'none';
+
+            // 打乱题库
+            shuffledQuestions = [...advanceGrammarLib].sort(() => Math.random() - 0.5);
+            
+            // 加载当前题目
+            loadCurrentQuestion();
+
+            // 启动主计时器
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // 5. 加载当前题目（进阶模式核心）
+        function loadCurrentQuestion() {
+            // 检查是否所有题目完成
+            if (currentQuestionIndex >= shuffledQuestions.length) {
+                endGame();
+                return;
+            }
+
+            // 重置选中状态和抢答倒计时
+            selectedOption = null;
+            answerCountdownLeft = 5;
+            answerCountdown.textContent = `抢答剩余：${answerCountdownLeft}秒`;
+            answerCountdown.style.display = 'block';
+
+            // 获取当前题目
+            const currentQ = shuffledQuestions[currentQuestionIndex];
+            
+            // 更新错误句
+            errorSentence.textContent = currentQ.errorSentence;
+            
+            // 清空选项栏
+            optionColumn.innerHTML = '';
+            
+            // 生成修正选项卡片
+            currentQ.options.forEach((option, index) => {
+                const card = document.createElement('div');
+                card.className = 'option-card';
+                card.dataset.index = index;
+                card.textContent = option;
+                card.addEventListener('click', () => selectOption(card, index));
+                optionColumn.appendChild(card);
+            });
+
+            // 启动抢答倒计时
+            clearInterval(answerCountdownTimer);
+            answerCountdownTimer = setInterval(() => {
+                answerCountdownLeft--;
+                answerCountdown.textContent = `抢答剩余：${answerCountdownLeft}秒`;
+                if (answerCountdownLeft <= 0) {
+                    clearInterval(answerCountdownTimer);
+                    // 超时判错
+                    score = Math.max(0, score - 10);
+                    scoreElement.textContent = score;
+                    streakCount = 0; // 重置连对
+                    streakElement.textContent = streakCount;
+                    streakBonus = 0;
+                    streakBonusElement.textContent = streakBonus;
+                    // 提示超时
+                    alert('抢答超时！扣10分，当前题目跳过');
+                    // 加载下一题
+                    currentQuestionIndex++;
+                    loadCurrentQuestion();
+                }
+            }, 1000);
+        }
+
+        // 6. 选择修正选项
+        function selectOption(card, index) {
+            // 取消其他选项选中状态
+            document.querySelectorAll('.option-card.selected').forEach(c => c.classList.remove('selected'));
+            // 选中当前选项
+            card.classList.add('selected');
+            selectedOption = { card, index };
+            // 暂停抢答倒计时
+            clearInterval(answerCountdownTimer);
+            answerCountdown.style.display = 'none';
+        }
+
+        // 7. 确认选择（进阶模式核心逻辑）
+        function submitAnswer() {
+            if (!selectedOption) {
+                alert('请先选择一个修正选项！');
+                return;
+            }
+
+            // 获取当前题目
+            const currentQ = shuffledQuestions[currentQuestionIndex];
+            const isCorrect = selectedOption.index === currentQ.correctIndex;
+
+            if (isCorrect) {
+                // 正确：加分+连对奖励
+                streakCount++;
+                maxStreak = Math.max(maxStreak, streakCount);
+                // 连对奖励：3连对+5分，5连对+10分，10连对+20分
+                if (streakCount >= 3 && streakCount < 5) {
+                    streakBonus = 5;
+                } else if (streakCount >= 5 && streakCount < 10) {
+                    streakBonus = 10;
+                } else if (streakCount >= 10) {
+                    streakBonus = 20;
+                } else {
+                    streakBonus = 0;
+                }
+                // 总分 = 基础分(15) + 连对奖励
+                const addScore = 15 + streakBonus;
+                score += addScore;
+
+                // 更新UI
+                selectedOption.card.classList.add('correct');
+                selectedOption.card.classList.remove('selected');
+                streakElement.textContent = streakCount;
+                streakBonusElement.textContent = streakBonus;
+                scoreElement.textContent = score;
+
+                // 显示详细解析
+                analysisTitle.textContent = `✅ 解析：${currentQ.errorSentence}`;
+                analysisContent.innerHTML = `<span class="error-point">${currentQ.errorPoint}</span><br><br>${currentQ.analysis}`;
+                correctRule.textContent = currentQ.rule;
+                analysisBox.style.display = 'block';
+
+            } else {
+                // 错误：扣分+重置连对
+                selectedOption.card.classList.add('wrong');
+                score = Math.max(0, score - 10); // 扣10分，最低0分
+                streakCount = 0;
+                streakBonus = 0;
+
+                // 更新UI
+                selectedOption.card.classList.remove('selected');
+                streakElement.textContent = streakCount;
+                streakBonusElement.textContent = streakBonus;
+                scoreElement.textContent = score;
+
+                // 显示错误解析（标注正确答案）
+                analysisTitle.textContent = `❌ 错误：${currentQ.errorSentence}`;
+                analysisContent.innerHTML = `<span class="error-point">${currentQ.errorPoint}</span><br><br>正确答案：${currentQ.options[currentQ.correctIndex]}<br><br>${currentQ.analysis}`;
+                correctRule.textContent = currentQ.rule;
+                analysisBox.style.display = 'block';
+
+                // 2秒后移除错误样式
+                setTimeout(() => {
+                    selectedOption.card.classList.remove('wrong');
+                }, 1500);
+            }
+
+            // 禁用当前题目所有选项
+            document.querySelectorAll('.option-card').forEach(c => c.style.pointerEvents = 'none');
+
+            // 3秒后加载下一题
+            setTimeout(() => {
+                currentQuestionIndex++;
+                loadCurrentQuestion();
+            }, 3000);
+        }
+
+        // 8. 结束游戏
+        function endGame() {
+            clearInterval(timerInterval);
+            clearInterval(answerCountdownTimer);
+            finalScoreElement.textContent = score;
+            finalStreakElement.textContent = maxStreak;
+            gameOver.style.display = 'flex';
+        }
+
+        // 9. 模式切换（预留基础模式入口）
+        basicModeBtn.addEventListener('click', () => {
+            alert('基础模式请切换至基础版代码运行！');
+            // 若需集成基础模式，可在此处切换题库+重置样式
+            // gameMode = "basic";
+            // basicModeBtn.classList.add('active');
+            // advanceModeBtn.classList.remove('active');
+            // initGame();
+        });
+
+        advanceModeBtn.addEventListener('click', () => {
+            gameMode = "advance";
+            advanceModeBtn.classList.add('active');
+            basicModeBtn.classList.remove('active');
+            initGame();
+        });
+
+        // 10. 绑定事件
+        submitBtn.addEventListener('click', submitAnswer);
+        resetBtn.addEventListener('click', initGame);
+        restartBtn.addEventListener('click', initGame);
+
+        // 初始化游戏
+        window.addEventListener('load', initGame);
+    </script>
+</body>
+</html>
